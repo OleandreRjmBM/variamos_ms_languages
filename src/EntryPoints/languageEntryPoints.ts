@@ -7,6 +7,7 @@ import {
   isAuthenticated,
 } from "@variamosple/variamos-security";
 import SessionManagement from "../Domain/Session/sessionUseCases";
+import { Language } from "../Domain/Language/Entities/Language";
 
 const router = Router();
 
@@ -54,6 +55,12 @@ router.delete(
   hasPermissions(["languages::delete"]),
   _LanguageManagement.deleteLanguage,
 );
+
+router.delete(
+  "/languages/soft-delete/:id/:userId",
+  hasPermissions(["languages::delete"]),
+  _LanguageManagement.softDeleteLanguage,
+)
 
 router.get(
   "/languagesbytypeanduser/:type/:userId",

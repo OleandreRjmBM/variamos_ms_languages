@@ -458,6 +458,41 @@ export default class LanguageManagement {
     }
   };
 
+  softDeleteLanguage = async (req: Request, res: Response) => {
+    console.log("\n=====================\nLanguageManagement : softDeleteLanguage");
+    try {
+      const softDeleteLanguage = await OrmLanguage.update(
+        {
+          stateAccept: "DELETED",
+        },
+        {
+          where: { id: parseInt(req.params.id) },
+        },
+      );
+
+      if (softDeleteLanguage.toString() === "0")
+        throw new Error("Something wrong, Language not found.");
+
+      const responseApi = new ResponseAPISuccess();
+      responseApi.message = "Language deleted successfully";
+      responseApi.data = JSON.parse(JSON.stringify(softDeleteLanguage));
+      responseApi.transactionId = "softDeleteLanguage_";
+
+      return res.status(200).json(responseApi);
+    } catch (e) {
+      const responseApi = new ResponseAPIError();
+      responseApi.message = "Internal Server Error";
+      responseApi.errorCode = "03";
+      responseApi.data = JSON.parse(
+        JSON.stringify('{"messageError": "' + e + '"}'),
+      );
+      responseApi.transactionId = "softDeleteLanguage_";
+      console.log(JSON.stringify(responseApi));
+      return res.status(400).json(responseApi);
+    }
+
+      }
+
   deleteLanguage = async (req: Request, res: Response) => {
     try {
       const userId = req.user?.id!;
