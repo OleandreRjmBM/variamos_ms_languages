@@ -32,7 +32,7 @@ userLanguagesV2Router.get("/", isAuthenticated, async (req, res) => {
       .build();
 
     const request = new RequestModel<LanguageFilter>(transactionId, filter);
-    const response = await new LanguageUseCase().getLanguages(request);
+    const response = await new LanguageUseCase().getLanguages(request, false);
 
     const status = response.errorCode || 200;
     res.status(status).json(response);

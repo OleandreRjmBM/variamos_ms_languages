@@ -10,7 +10,16 @@ export const LANGUAGES_V2_ROUTE = "/v2/languages";
 
 const languagesV2Router = Router();
 
-async function queryLanguagesRepository(transactionId : string, name : string|null, userId : string|null, stateAccept : string|null, pageNumber : number, pageSize : number, res : any) {
+async function queryLanguagesRepository(
+  transactionId: string,
+  name: string | null,
+  userId: string | null,
+  stateAccept: string | null,
+  pageNumber: number,
+  pageSize: number,
+  withDelete: boolean,
+  res: any,
+) {
   try {
     const filter: LanguageFilter = LanguageFilter.builder()
       .setName(name as string)
@@ -21,7 +30,10 @@ async function queryLanguagesRepository(transactionId : string, name : string|nu
       .build();
 
     const request = new RequestModel<LanguageFilter>(transactionId, filter);
-    const response = await new LanguageUseCase().getLanguages(request);
+    const response = await new LanguageUseCase().getLanguages(
+      request,
+      withDelete,
+    );
 
     const status = response.errorCode || 200;
     res.status(status).json(response);
@@ -30,17 +42,26 @@ async function queryLanguagesRepository(transactionId : string, name : string|nu
     const response = new ResponseModel(
       transactionId,
       500,
-      "Internal Server Error"
+      "Internal Server Error",
     );
     res.status(500).json(response);
   }
-};
+}
 
 languagesV2Router.get("/", async (req, res) => {
   const transactionId = "getLanguages";
   const { pageNumber, pageSize, name = null } = req.query;
 
-  queryLanguagesRepository(transactionId, name as string, null, null, pageNumber as unknown as number, pageSize as unknown as number, res);
+  queryLanguagesRepository(
+    transactionId,
+    name as string,
+    null,
+    null,
+    pageNumber as unknown as number,
+    pageSize as unknown as number,
+    true,
+    res,
+  );
 });
 
 languagesV2Router.get("/public", async (req, res) => {
@@ -48,7 +69,16 @@ languagesV2Router.get("/public", async (req, res) => {
   const { pageNumber, pageSize, name = null } = req.query;
   const stateAccept = "ACTIVE";
   // Public/Approved language are named "active" in the DB
-  queryLanguagesRepository(transactionId, name as string, null, stateAccept, pageNumber as unknown as number, pageSize as unknown as number, res);
+  queryLanguagesRepository(
+    transactionId,
+    name as string,
+    null,
+    stateAccept,
+    pageNumber as unknown as number,
+    pageSize as unknown as number,
+    false,
+    res,
+  );
 });
 
 languagesV2Router.get("/elements/draws", async (req, res) => {
@@ -57,12 +87,12 @@ languagesV2Router.get("/elements/draws", async (req, res) => {
   try {
     const filter: PagedModel = new PagedModel(
       parseInt(pageNumber as string) || undefined,
-      parseInt(pageSize as string) || undefined
+      parseInt(pageSize as string) || undefined,
     );
 
     const request = new RequestModel<PagedModel>(transactionId, filter);
     const response = await new LanguageUseCase().getLanguageElementsDraw(
-      request
+      request,
     );
 
     const status = response.errorCode || 200;
@@ -72,7 +102,7 @@ languagesV2Router.get("/elements/draws", async (req, res) => {
     const response = new ResponseModel(
       transactionId,
       500,
-      "Internal Server Error"
+      "Internal Server Error",
     );
     res.status(500).json(response);
   }
@@ -98,7 +128,7 @@ languagesV2Router.get("/semantics", async (req, res) => {
     const response = new ResponseModel(
       transactionId,
       500,
-      "Internal Server Error"
+      "Internal Server Error",
     );
     res.status(500).json(response);
   }

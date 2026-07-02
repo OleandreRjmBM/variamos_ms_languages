@@ -11,41 +11,42 @@ import { User } from "../Session/Entities/User";
 
 export class LanguageUseCase {
   getLanguages(
-    request: RequestModel<LanguageFilter>
+    request: RequestModel<LanguageFilter>,
+    withDelete: boolean,
   ): Promise<ResponseModel<Language[]>> {
-    return LanguageRepositoryInstance.getLanguages(request);
+    return LanguageRepositoryInstance.getLanguages(request, withDelete);
   }
 
   getLanguageSemantics(
-    request: RequestModel<SemanticsFilter>
+    request: RequestModel<SemanticsFilter>,
   ): Promise<ResponseModel<LanguageSemantic[]>> {
     return LanguageRepositoryInstance.getLanguageSemantics(request);
   }
 
   getLanguageElementsDraw(
-    request: RequestModel<PagedModel>
+    request: RequestModel<PagedModel>,
   ): Promise<ResponseModel<LanguageElementDraw[]>> {
     return LanguageRepositoryInstance.getLanguageElementsDraw(request);
   }
 
-  getSharedUsersByLanguage(
-    languageId: number
-  ): Promise<ResponseModel<User[]>> {
+  getSharedUsersByLanguage(languageId: number): Promise<ResponseModel<User[]>> {
     return LanguageRepositoryInstance.getSharedUsersByLanguage(languageId);
   }
 
   shareLanguageWithUser(
     languageId: number,
-    userId: string
+    userId: string,
   ): Promise<ResponseModel<void>> {
-    return LanguageRepositoryInstance.shareLanguageWithUser(languageId, userId);  
+    return LanguageRepositoryInstance.shareLanguageWithUser(languageId, userId);
   }
-  
+
   unshareLanguageWithUser(
     languageId: number,
-    userId: string
+    userId: string,
   ): Promise<ResponseModel<void>> {
-    return LanguageRepositoryInstance.unshareLanguageWithUser(languageId, userId);
-    
+    return LanguageRepositoryInstance.unshareLanguageWithUser(
+      languageId,
+      userId,
+    );
   }
 }
