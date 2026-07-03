@@ -100,7 +100,9 @@ export class LanguageRepository extends BaseRepository {
           `
             SELECT COUNT(1)
             FROM variamos.language
-            WHERE semantics IS NOT NULL AND semantics <> '{}'
+            WHERE semantics IS NOT NULL
+              AND semantics <> '{}'
+              AND language."stateAccept" != 'DELETED'
               AND (:searchValue IS NULL OR name || ': [' || type || ']' ILIKE '%' || :searchValue || '%');
           `,
           { type: QueryTypes.SELECT, replacements },
@@ -112,7 +114,9 @@ export class LanguageRepository extends BaseRepository {
           `
             SELECT id, name, type, semantics
             FROM variamos.language
-            WHERE semantics IS NOT NULL AND semantics <> '{}'
+            WHERE semantics IS NOT NULL 
+              AND semantics <> '{}'
+              AND language."stateAccept" != 'DELETED'
               AND (:searchValue IS NULL OR name || ': [' || type || ']' ILIKE '%' || :searchValue || '%')
             ORDER BY name
             LIMIT :pageSize OFFSET (:pageNumber - 1) * :pageSize;
@@ -159,7 +163,8 @@ export class LanguageRepository extends BaseRepository {
             FROM variamos.language,
             LATERAL jsonb_each(language."concreteSyntax"->'elements') AS kv(key, value)
             WHERE kv.value ? 'draw'
-              AND kv.value->>'draw' <> '';
+              AND kv.value->>'draw' <> ''
+              AND language."stateAccept" != 'DELETED';
           `,
           { type: QueryTypes.SELECT },
         )
@@ -173,6 +178,7 @@ export class LanguageRepository extends BaseRepository {
             LATERAL jsonb_each(language."concreteSyntax"->'elements') AS kv(key, value)
             WHERE kv.value ? 'draw'
               AND kv.value->>'draw' <> ''
+              AND language."stateAccept" != 'DELETED'
             ORDER BY name, kv.key
             LIMIT :pageSize OFFSET (:pageNumber - 1) * :pageSize;
           `,
