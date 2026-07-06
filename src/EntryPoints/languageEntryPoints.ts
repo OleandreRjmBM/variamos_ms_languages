@@ -56,12 +56,6 @@ router.delete(
   _LanguageManagement.deleteLanguage,
 );
 
-router.delete(
-  "/languages/soft-delete/:id/:userId",
-  hasPermissions(["languages::delete"]),
-  _LanguageManagement.softDeleteLanguage,
-)
-
 router.get(
   "/languagesbytypeanduser/:type/:userId",
   hasPermissions(["languages::query"]),
