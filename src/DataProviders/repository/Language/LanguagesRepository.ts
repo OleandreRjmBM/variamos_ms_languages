@@ -13,12 +13,14 @@ import { BaseRepository } from "../BaseRepository";
 
 export class LanguageRepository extends BaseRepository {
   async getLanguages(
-    request: RequestModel<LanguageFilter>
+    request: RequestModel<LanguageFilter>,
+    withDelete: boolean,
   ): Promise<ResponseModel<Language[]>> {
     const response = new ResponseModel<Language[]>(request.transactionId);
     try {
       const { data: filter = new LanguageFilter() } = request;
       const replacements = this.initilizeReplacements(filter);
+      replacements.withDelete = withDelete ? null : "DELETED";
       console.log(replacements);
       response.totalCount = await sequelizeVariamos
         .query(
@@ -28,9 +30,10 @@ export class LanguageRepository extends BaseRepository {
             LEFT JOIN variamos.user_language AS ul ON (l.id = ul.language_id AND (:userId IS NOT NULL) AND (ul.access_level = 'OWNER' OR ul.access_level = 'SHARED') AND ul.user_id = :userId)
             WHERE (:name IS NULL OR l.name ILIKE '%' || :name || '%')
               AND (:userId IS NULL OR ul.user_id = :userId)
-              AND (:status IS NULL OR l."stateAccept" = :status);
+              AND (:status IS NULL OR l."stateAccept" = :status)
+              AND (:withDelete IS NULL OR l."stateAccept" != :withDelete);
               `,
-              { type: QueryTypes.SELECT, replacements }
+          { type: QueryTypes.SELECT, replacements },
         )
         .then((result: any) => +result?.[0]?.count || 0);
 
@@ -44,15 +47,16 @@ export class LanguageRepository extends BaseRepository {
             JOIN variamos.user AS uo ON (ulo.user_id = uo.id)
             WHERE (:name IS NULL OR l.name ILIKE '%' || :name || '%')
               AND (:userId IS NULL OR ul.user_id = :userId)
-              AND (:userId IS NOT NULL OR ul.access_level = 'OWNER')
               AND (:status IS NULL OR l."stateAccept" = :status)
+              AND (:userId IS NOT NULL OR ul.access_level = 'OWNER')
+              AND (:withDelete IS NULL OR l."stateAccept" != :withDelete)
               ORDER BY l.name
               LIMIT :pageSize OFFSET (:pageNumber - 1) * :pageSize;
               `,
-              {
+          {
             type: QueryTypes.SELECT,
             replacements,
-          }
+          },
         )
         .then((result: any[]) =>
           result.map<Language>((row) =>
@@ -69,8 +73,8 @@ export class LanguageRepository extends BaseRepository {
               .setAccessLevel(replacements.userId ? row.access_level : null)
               .setCreatedAt(row.createdAt)
               .setUpdatedAt(row.updatedAt)
-              .build()
-          )
+              .build(),
+          ),
         );
     } catch (error) {
       console.error("Error in getLanguages:", request, error);
@@ -81,10 +85,10 @@ export class LanguageRepository extends BaseRepository {
   }
 
   async getLanguageSemantics(
-    request: RequestModel<SemanticsFilter>
+    request: RequestModel<SemanticsFilter>,
   ): Promise<ResponseModel<LanguageSemantic[]>> {
     const response = new ResponseModel<LanguageSemantic[]>(
-      request.transactionId
+      request.transactionId,
     );
     try {
       const { data: filter = new PagedModel() } = request;
@@ -96,10 +100,12 @@ export class LanguageRepository extends BaseRepository {
           `
             SELECT COUNT(1)
             FROM variamos.language
-            WHERE semantics IS NOT NULL AND semantics <> '{}'
+            WHERE semantics IS NOT NULL
+              AND semantics <> '{}'
+              AND language."stateAccept" != 'DELETED'
               AND (:searchValue IS NULL OR name || ': [' || type || ']' ILIKE '%' || :searchValue || '%');
           `,
-          { type: QueryTypes.SELECT, replacements }
+          { type: QueryTypes.SELECT, replacements },
         )
         .then((result: any) => +result?.[0]?.count || 0);
 
@@ -108,7 +114,9 @@ export class LanguageRepository extends BaseRepository {
           `
             SELECT id, name, type, semantics
             FROM variamos.language
-            WHERE semantics IS NOT NULL AND semantics <> '{}'
+            WHERE semantics IS NOT NULL 
+              AND semantics <> '{}'
+              AND language."stateAccept" != 'DELETED'
               AND (:searchValue IS NULL OR name || ': [' || type || ']' ILIKE '%' || :searchValue || '%')
             ORDER BY name
             LIMIT :pageSize OFFSET (:pageNumber - 1) * :pageSize;
@@ -116,7 +124,7 @@ export class LanguageRepository extends BaseRepository {
           {
             type: QueryTypes.SELECT,
             replacements,
-          }
+          },
         )
         .then((result: any[]) =>
           //TODO: move this to a mapper file/class
@@ -127,7 +135,7 @@ export class LanguageRepository extends BaseRepository {
               semantics: row.semantics,
               type: row.type,
             };
-          })
+          }),
         );
     } catch (error) {
       console.error("Error in getLanguageSemantics:", request, error);
@@ -138,10 +146,10 @@ export class LanguageRepository extends BaseRepository {
   }
 
   async getLanguageElementsDraw(
-    request: RequestModel<PagedModel>
+    request: RequestModel<PagedModel>,
   ): Promise<ResponseModel<LanguageElementDraw[]>> {
     const response = new ResponseModel<LanguageElementDraw[]>(
-      request.transactionId
+      request.transactionId,
     );
     try {
       const { data: filter = new PagedModel() } = request;
@@ -155,9 +163,10 @@ export class LanguageRepository extends BaseRepository {
             FROM variamos.language,
             LATERAL jsonb_each(language."concreteSyntax"->'elements') AS kv(key, value)
             WHERE kv.value ? 'draw'
-              AND kv.value->>'draw' <> '';
+              AND kv.value->>'draw' <> ''
+              AND language."stateAccept" != 'DELETED';
           `,
-          { type: QueryTypes.SELECT }
+          { type: QueryTypes.SELECT },
         )
         .then((result: any) => +result?.[0]?.count || 0);
 
@@ -169,13 +178,14 @@ export class LanguageRepository extends BaseRepository {
             LATERAL jsonb_each(language."concreteSyntax"->'elements') AS kv(key, value)
             WHERE kv.value ? 'draw'
               AND kv.value->>'draw' <> ''
+              AND language."stateAccept" != 'DELETED'
             ORDER BY name, kv.key
             LIMIT :pageSize OFFSET (:pageNumber - 1) * :pageSize;
           `,
           {
             type: QueryTypes.SELECT,
             replacements,
-          }
+          },
         )
         .then((result: any[]) =>
           //TODO: move this to a mapper file/class
@@ -186,7 +196,7 @@ export class LanguageRepository extends BaseRepository {
               elementName: row.element_name,
               draw: row.draw,
             };
-          })
+          }),
         );
     } catch (error) {
       console.error("Error in getLanguageElementsDraw:", request, error);
@@ -197,7 +207,7 @@ export class LanguageRepository extends BaseRepository {
   }
 
   async getSharedUsersByLanguage(
-    languageId: number
+    languageId: number,
   ): Promise<ResponseModel<User[]>> {
     const response = new ResponseModel<User[]>("getSharedUsersByLanguage");
     try {
@@ -212,7 +222,7 @@ export class LanguageRepository extends BaseRepository {
           {
             type: QueryTypes.SELECT,
             replacements: { languageId },
-          }
+          },
         )
         .then((result: any[]) =>
           result.map<User>((row) => ({
@@ -220,7 +230,7 @@ export class LanguageRepository extends BaseRepository {
             user: row.user,
             name: row.name,
             email: row.email,
-          }))
+          })),
         );
     } catch (error) {
       console.error("Error in getSharedUsersByLanguage:", error);
@@ -232,22 +242,21 @@ export class LanguageRepository extends BaseRepository {
 
   async shareLanguageWithUser(
     languageId: number,
-    userId: string
+    userId: string,
   ): Promise<ResponseModel<void>> {
     console.log("shareLanguageWithUser", languageId, userId);
     const response = new ResponseModel<void>("shareLanguageWithUser");
     try {
-      await sequelizeVariamos
-        .query(
-          `
+      await sequelizeVariamos.query(
+        `
                 INSERT INTO variamos.user_language (user_id, language_id, access_level)
                 VALUES (:userId, :languageId, 'SHARED')
           `,
-          {
-            type: QueryTypes.INSERT,
-            replacements: { userId, languageId },
-          }
-        );
+        {
+          type: QueryTypes.INSERT,
+          replacements: { userId, languageId },
+        },
+      );
     } catch (error) {
       console.error("Error in shareLanguageWithUser:", error);
       response.withError(500, "Internal server error");
@@ -255,25 +264,24 @@ export class LanguageRepository extends BaseRepository {
 
     return response;
   }
-  
+
   async unshareLanguageWithUser(
     languageId: number,
-    userId: string
+    userId: string,
   ): Promise<ResponseModel<void>> {
     console.log("unshareLanguageWithUser", languageId, userId);
     const response = new ResponseModel<void>("unshareLanguageWithUser");
     try {
-      await sequelizeVariamos
-        .query(
-          `
+      await sequelizeVariamos.query(
+        `
                 DELETE FROM variamos.user_language
                 WHERE user_id = :userId AND language_id = :languageId
           `,
-          {
-            type: QueryTypes.DELETE,
-            replacements: { userId, languageId },
-          }
-        );
+        {
+          type: QueryTypes.DELETE,
+          replacements: { userId, languageId },
+        },
+      );
     } catch (error) {
       console.error("Error in unshareLanguageWithUser:", error);
       response.withError(500, "Internal server error");

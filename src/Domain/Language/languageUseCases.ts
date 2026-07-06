@@ -18,7 +18,7 @@ import {
 import {
   OrmUserLanguage,
   SearchUserPermissions,
-  UserLanguage
+  UserLanguage,
 } from "./Entities/UserLanguage";
 
 const ajv = new Ajv();
@@ -145,6 +145,13 @@ export default class LanguageManagement {
         parseInt(_req.params.id),
       );
       const languageStatus = searchLanguage.stateAccept;
+      
+      if (languageStatus == "DELETED") {
+        const responseApi = new ResponseAPIError();
+        responseApi.message = "This language has been deleted.";
+        responseApi.transactionId = "getLanguageById_";
+        return res.status(404).json(responseApi);
+      }
 
       if (
         languageStatus == "ACTIVE" ||
@@ -497,11 +504,16 @@ export default class LanguageManagement {
         }
       }
 
-      const deleteLanguage = (await OrmLanguage.destroy({
-        where: { id: id },
-      })) as Language;
+      const deleteLanguage = await OrmLanguage.update(
+        {
+          stateAccept: "DELETED",
+        },
+        {
+          where: { id: id },
+        },
+      );
 
-      if (deleteLanguage) {
+      if (deleteLanguage.toString() === "1") {
         const responseApi = new ResponseAPISuccess();
         responseApi.message = "Language deleted successfully";
         responseApi.transactionId = "deleteLanguage_";
