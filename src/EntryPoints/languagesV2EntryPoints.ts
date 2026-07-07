@@ -81,6 +81,36 @@ languagesV2Router.get("/public", async (req, res) => {
   );
 });
 
+languagesV2Router.get("/deleted", async (req, res) => {
+  const transactionId = "getDeletedLanguages";
+  const { pageNumber, pageSize, name = null } = req.query;
+  queryLanguagesRepository(
+    transactionId,
+    name as string,
+    null,
+    "DELETED",
+    pageNumber as unknown as number,
+    pageSize as unknown as number,
+    true,
+    res,
+  );
+});
+
+languagesV2Router.get("/pending", async (req, res) => {
+  const transactionId = "getDeletedLanguages";
+  const { pageNumber, pageSize, name = null } = req.query;
+  queryLanguagesRepository(
+    transactionId,
+    name as string,
+    null,
+    "PENDING",
+    pageNumber as unknown as number,
+    pageSize as unknown as number,
+    true,
+    res,
+  );
+});
+
 languagesV2Router.get("/elements/draws", async (req, res) => {
   const transactionId = "getLanguageElementsDraws";
   const { pageNumber = null, pageSize = null } = req.query;
