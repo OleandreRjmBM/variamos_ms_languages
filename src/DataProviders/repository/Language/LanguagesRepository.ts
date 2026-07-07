@@ -6,6 +6,9 @@ import { LanguageElementDraw } from "../../../Domain/Language/Entities/LanguageE
 import { LanguageFilter } from "../../../Domain/Language/Entities/LanguageFilter";
 import { LanguageSemantic } from "../../../Domain/Language/Entities/LanguageSemantic";
 import { Language } from "../../../Domain/Language/Entities/LanguageV2";
+import { OrmLanguage } from "../../../Domain/Language/Entities/Language";
+import { OrmUserLanguage } from "../../../Domain/Language/Entities/UserLanguage";
+import { OrmUser } from "../../../Domain/Session/Entities/User";
 import { SemanticsFilter } from "../../../Domain/Language/Entities/SemanticFilter";
 import { User } from "../../../Domain/Session/Entities/User";
 import sequelizeVariamos from "../../dataBase/VariamosORM";
@@ -83,7 +86,197 @@ export class LanguageRepository extends BaseRepository {
 
     return response;
   }
+  async getPublicLanguages(
+    request: RequestModel<PagedModel>,
+  ): Promise<ResponseModel<Language[]>> {
+    const response = new ResponseModel<Language[]>(request.transactionId);
+    try {
+      const { data: filter = new PagedModel() } = request;
 
+      const { Op } = require("sequelize");
+
+      response.totalCount = await OrmLanguage.count({
+        where: {
+          stateAccept: { [Op.eq]: 'ACTIVE' }
+        },
+        include: [{
+          model: OrmUserLanguage,
+          as: 'userLanguages',
+          where: { access_level: 'OWNER' },
+          required: true
+        }]
+      });
+
+      const results = await OrmLanguage.findAll({
+        where: {
+          stateAccept: { [Op.eq]: 'ACTIVE' }
+        },
+        include: [{
+          model: OrmUserLanguage,
+          as: 'userLanguages',
+          where: { access_level: 'OWNER' },
+          required: true,
+          include: [{
+            model: OrmUser,
+            as: 'user'
+          }]
+        }],
+        order: [['name', 'ASC']],
+        limit: filter.pageSize || undefined,
+        offset: filter.pageNumber && filter.pageSize ? (filter.pageNumber - 1) * filter.pageSize : undefined
+      });
+
+      response.data = results.map((row: any) =>
+        Language.builder()
+          .setId(row.id)
+          .setName(row.name)
+          .setAbstractSyntax(row.abstractSyntax)
+          .setConcreteSyntax(row.concreteSyntax)
+          .setStateAccept(row.stateAccept)
+          .setSemantics(row.semantics)
+          .setType(row.type)
+          .setOwnerName(row.userLanguages[0]?.user?.name)
+          .setOwnerId(row.userLanguages[0]?.user?.id)
+          .setAccessLevel(row.userLanguages[0]?.access_level)
+          .setCreatedAt(row.createdAt)
+          .setUpdatedAt(row.updatedAt)
+          .build(),
+      );
+    } catch (error) {
+      console.error("Error in getPublicLanguages:", request, error);
+      response.withError(500, "Internal server error");
+    }
+
+    return response;
+  }
+
+  async getDeletedLanguages(
+    request: RequestModel<PagedModel>,
+  ): Promise<ResponseModel<Language[]>>{
+     const response = new ResponseModel<Language[]>(request.transactionId);
+    try {
+      const { data: filter = new PagedModel() } = request;
+
+      const { Op } = require("sequelize");
+
+      response.totalCount = await OrmLanguage.count({
+        where: {
+          stateAccept: { [Op.eq]: 'DELETED' }
+        },
+        include: [{
+          model: OrmUserLanguage,
+          as: 'userLanguages',
+          where: { access_level: 'OWNER' },
+          required: true
+        }]
+      });
+
+      const results = await OrmLanguage.findAll({
+        where: {
+          stateAccept: { [Op.eq]: 'DELETED' }
+        },
+        include: [{
+          model: OrmUserLanguage,
+          as: 'userLanguages',
+          where: { access_level: 'OWNER' },
+          required: true,
+          include: [{
+            model: OrmUser,
+            as: 'user'
+          }]
+        }],
+        order: [['name', 'ASC']],
+        limit: filter.pageSize || undefined,
+        offset: filter.pageNumber && filter.pageSize ? (filter.pageNumber - 1) * filter.pageSize : undefined
+      });
+
+      response.data = results.map((row: any) =>
+        Language.builder()
+          .setId(row.id)
+          .setName(row.name)
+          .setAbstractSyntax(row.abstractSyntax)
+          .setConcreteSyntax(row.concreteSyntax)
+          .setStateAccept(row.stateAccept)
+          .setSemantics(row.semantics)
+          .setType(row.type)
+          .setOwnerName(row.userLanguages[0]?.user?.name)
+          .setOwnerId(row.userLanguages[0]?.user?.id)
+          .setAccessLevel(row.userLanguages[0]?.access_level)
+          .setCreatedAt(row.createdAt)
+          .setUpdatedAt(row.updatedAt)
+          .build(),
+      );
+    } catch (error) {
+      console.error("Error in getDeletedLanguages:", request, error);
+      response.withError(500, "Internal server error");
+    }
+
+    return response;
+
+  }  async getPendingLanguages(
+    request: RequestModel<PagedModel>,
+  ): Promise<ResponseModel<Language[]>>{
+     const response = new ResponseModel<Language[]>(request.transactionId);
+    try {
+      const { data: filter = new PagedModel() } = request;
+
+      const { Op } = require("sequelize");
+
+      response.totalCount = await OrmLanguage.count({
+        where: {
+          stateAccept: { [Op.eq]: 'PENDING' }
+        },
+        include: [{
+          model: OrmUserLanguage,
+          as: 'userLanguages',
+          where: { access_level: 'OWNER' },
+          required: true
+        }]
+      });
+
+      const results = await OrmLanguage.findAll({
+        where: {
+          stateAccept: { [Op.eq]: 'PENDING' }
+        },
+        include: [{
+          model: OrmUserLanguage,
+          as: 'userLanguages',
+          where: { access_level: 'OWNER' },
+          required: true,
+          include: [{
+            model: OrmUser,
+            as: 'user'
+          }]
+        }],
+        order: [['name', 'ASC']],
+        limit: filter.pageSize || undefined,
+        offset: filter.pageNumber && filter.pageSize ? (filter.pageNumber - 1) * filter.pageSize : undefined
+      });
+
+      response.data = results.map((row: any) =>
+        Language.builder()
+          .setId(row.id)
+          .setName(row.name)
+          .setAbstractSyntax(row.abstractSyntax)
+          .setConcreteSyntax(row.concreteSyntax)
+          .setStateAccept(row.stateAccept)
+          .setSemantics(row.semantics)
+          .setType(row.type)
+          .setOwnerName(row.userLanguages[0]?.user?.name)
+          .setOwnerId(row.userLanguages[0]?.user?.id)
+          .setAccessLevel(row.userLanguages[0]?.access_level)
+          .setCreatedAt(row.createdAt)
+          .setUpdatedAt(row.updatedAt)
+          .build(),
+      );
+    } catch (error) {
+      console.error("Error in getDeletedLanguages:", request, error);
+      response.withError(500, "Internal server error");
+    }
+
+    return response;
+  }
+  
   async getLanguageSemantics(
     request: RequestModel<SemanticsFilter>,
   ): Promise<ResponseModel<LanguageSemantic[]>> {
@@ -114,7 +307,7 @@ export class LanguageRepository extends BaseRepository {
           `
             SELECT id, name, type, semantics
             FROM variamos.language
-            WHERE semantics IS NOT NULL 
+            WHERE semantics IS NOT NULL
               AND semantics <> '{}'
               AND language."stateAccept" != 'DELETED'
               AND (:searchValue IS NULL OR name || ': [' || type || ']' ILIKE '%' || :searchValue || '%')

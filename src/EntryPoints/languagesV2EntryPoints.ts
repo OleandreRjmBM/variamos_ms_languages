@@ -67,48 +67,79 @@ languagesV2Router.get("/", async (req, res) => {
 languagesV2Router.get("/public", async (req, res) => {
   const transactionId = "getPublicLanguages";
   const { pageNumber, pageSize, name = null } = req.query;
-  const stateAccept = "ACTIVE";
-  // Public/Approved language are named "active" in the DB
-  queryLanguagesRepository(
-    transactionId,
-    name as string,
-    null,
-    stateAccept,
-    pageNumber as unknown as number,
-    pageSize as unknown as number,
-    false,
-    res,
-  );
+  try {
+    const filter: LanguageFilter = LanguageFilter.builder()
+      .setName(name as string)
+      .setPageNumber(pageNumber as unknown as number)
+      .setPageSize(pageSize as unknown as number)
+      .build();
+
+    const request = new RequestModel<LanguageFilter>(transactionId, filter);
+    const response = await new LanguageUseCase().getPublicLanguages(request);
+
+    const status = response.errorCode || 200;
+    res.status(status).json(response);
+  } catch (error) {
+    console.error("Error:", error);
+    const response = new ResponseModel(
+      transactionId,
+      500,
+      "Internal Server Error",
+    );
+    res.status(500).json(response);
+  }
 });
 
 languagesV2Router.get("/deleted", async (req, res) => {
   const transactionId = "getDeletedLanguages";
   const { pageNumber, pageSize, name = null } = req.query;
-  queryLanguagesRepository(
-    transactionId,
-    name as string,
-    null,
-    "DELETED",
-    pageNumber as unknown as number,
-    pageSize as unknown as number,
-    true,
-    res,
-  );
+  try {
+    const filter: LanguageFilter = LanguageFilter.builder()
+      .setName(name as string)
+      .setPageNumber(pageNumber as unknown as number)
+      .setPageSize(pageSize as unknown as number)
+      .build();
+
+    const request = new RequestModel<LanguageFilter>(transactionId, filter);
+    const response = await new LanguageUseCase().getDeletedLanguages(request);
+
+    const status = response.errorCode || 200;
+    res.status(status).json(response);
+  } catch (error) {
+    console.error("Error:", error);
+    const response = new ResponseModel(
+      transactionId,
+      500,
+      "Internal Server Error",
+    );
+    res.status(500).json(response);
+  }
 });
 
 languagesV2Router.get("/pending", async (req, res) => {
   const transactionId = "getDeletedLanguages";
   const { pageNumber, pageSize, name = null } = req.query;
-  queryLanguagesRepository(
-    transactionId,
-    name as string,
-    null,
-    "PENDING",
-    pageNumber as unknown as number,
-    pageSize as unknown as number,
-    true,
-    res,
-  );
+  try {
+    const filter: LanguageFilter = LanguageFilter.builder()
+      .setName(name as string)
+      .setPageNumber(pageNumber as unknown as number)
+      .setPageSize(pageSize as unknown as number)
+      .build();
+
+    const request = new RequestModel<LanguageFilter>(transactionId, filter);
+    const response = await new LanguageUseCase().getPendingLanguages(request);
+
+    const status = response.errorCode || 200;
+    res.status(status).json(response);
+  } catch (error) {
+    console.error("Error:", error);
+    const response = new ResponseModel(
+      transactionId,
+      500,
+      "Internal Server Error",
+    );
+    res.status(500).json(response);
+  }
 });
 
 languagesV2Router.get("/elements/draws", async (req, res) => {

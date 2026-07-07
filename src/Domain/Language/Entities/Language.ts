@@ -3,6 +3,8 @@
 
 import Sequelize, { Model } from "sequelize";
 import sequelize from "../../../DataProviders/dataBase/VariamosORM";
+import { OrmUserLanguage } from "./UserLanguage";
+import { OrmUser } from "../../Session/Entities/User";
 
 export interface LanguageAttributes {
   id?: number;
@@ -75,6 +77,26 @@ OrmLanguage.init(
     updatedAt: "updated_at",
   }
 );
+
+OrmLanguage.hasMany(OrmUserLanguage, { 
+  foreignKey: 'language_id', 
+  as: 'userLanguages' 
+});
+
+OrmUserLanguage.belongsTo(OrmLanguage, {
+  foreignKey: 'language_id',
+  as: 'language'
+});
+
+OrmUserLanguage.belongsTo(OrmUser, {
+  foreignKey: 'user_id',
+  as: 'user'
+});
+
+OrmUser.hasMany(OrmUserLanguage, {
+  foreignKey: 'user_id',
+  as: 'userLanguages'
+});
 
 export class Language {
   id?: number;
