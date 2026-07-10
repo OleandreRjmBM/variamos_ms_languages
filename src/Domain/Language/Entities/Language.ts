@@ -78,24 +78,16 @@ OrmLanguage.init(
   }
 );
 
-OrmLanguage.hasMany(OrmUserLanguage, { 
-  foreignKey: 'language_id', 
-  as: 'userLanguages' 
+OrmLanguage.belongsToMany(OrmUser, {
+  through: "user_language",
+  foreignKey: "language_id",
+  as: "users",
 });
 
-OrmUserLanguage.belongsTo(OrmLanguage, {
-  foreignKey: 'language_id',
-  as: 'language'
-});
-
-OrmUserLanguage.belongsTo(OrmUser, {
-  foreignKey: 'user_id',
-  as: 'user'
-});
-
-OrmUser.hasMany(OrmUserLanguage, {
-  foreignKey: 'user_id',
-  as: 'userLanguages'
+OrmUser.belongsToMany(OrmLanguage, {
+  through: "user_language",
+  foreignKey: "user_id",
+  as: "languages",
 });
 
 export class Language {

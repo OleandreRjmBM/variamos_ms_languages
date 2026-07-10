@@ -87,43 +87,49 @@ export class LanguageRepository extends BaseRepository {
     return response;
   }
   async getPublicLanguages(
-    request: RequestModel<PagedModel>,
+    request: RequestModel<LanguageFilter>,
   ): Promise<ResponseModel<Language[]>> {
     const response = new ResponseModel<Language[]>(request.transactionId);
     try {
-      const { data: filter = new PagedModel() } = request;
-
+      const { data: filter = new LanguageFilter() } = request;
       const { Op } = require("sequelize");
-
       response.totalCount = await OrmLanguage.count({
         where: {
-          stateAccept: { [Op.eq]: 'ACTIVE' }
+          stateAccept: { [Op.eq]: "ACTIVE" },
         },
-        include: [{
-          model: OrmUserLanguage,
-          as: 'userLanguages',
-          where: { access_level: 'OWNER' },
-          required: true
-        }]
       });
 
       const results = await OrmLanguage.findAll({
         where: {
-          stateAccept: { [Op.eq]: 'ACTIVE' }
+          stateAccept: { [Op.eq]: "ACTIVE" },
+          ...(filter.name && { name: { [Op.iLike]: `%${filter.name}%` } }),
         },
-        include: [{
-          model: OrmUserLanguage,
-          as: 'userLanguages',
-          where: { access_level: 'OWNER' },
-          required: true,
-          include: [{
-            model: OrmUser,
-            as: 'user'
-          }]
-        }],
-        order: [['name', 'ASC']],
+        include: [
+          {
+            model: OrmUserLanguage,
+            as: "userLanguages",
+            where: { access_level: { [Op.eq]: "OWNER" } },
+            required: true,
+            include: [
+              {
+                model: OrmUser,
+                as: "user",
+              },
+            ],
+          },
+          {
+            model: OrmUserLanguage,
+            as: "userPermission",
+            where: { user_id: filter.userId},
+            required: false,
+          },
+        ],
+        order: [["name", "ASC"]],
         limit: filter.pageSize || undefined,
-        offset: filter.pageNumber && filter.pageSize ? (filter.pageNumber - 1) * filter.pageSize : undefined
+        offset:
+        filter.pageNumber && filter.pageSize
+        ? (filter.pageNumber - 1) * filter.pageSize
+        : undefined,
       });
 
       response.data = results.map((row: any) =>
@@ -137,7 +143,7 @@ export class LanguageRepository extends BaseRepository {
           .setType(row.type)
           .setOwnerName(row.userLanguages[0]?.user?.name)
           .setOwnerId(row.userLanguages[0]?.user?.id)
-          .setAccessLevel(row.userLanguages[0]?.access_level)
+          .setAccessLevel(row.userPermission[0]?.access_level)
           .setCreatedAt(row.createdAt)
           .setUpdatedAt(row.updatedAt)
           .build(),
@@ -151,106 +157,58 @@ export class LanguageRepository extends BaseRepository {
   }
 
   async getDeletedLanguages(
-    request: RequestModel<PagedModel>,
-  ): Promise<ResponseModel<Language[]>>{
-     const response = new ResponseModel<Language[]>(request.transactionId);
+    request: RequestModel<LanguageFilter>,
+  ): Promise<ResponseModel<Language[]>> {
+    const response = new ResponseModel<Language[]>(request.transactionId);
     try {
-      const { data: filter = new PagedModel() } = request;
+      const { data: filter = new LanguageFilter() } = request;
 
       const { Op } = require("sequelize");
 
       response.totalCount = await OrmLanguage.count({
         where: {
-          stateAccept: { [Op.eq]: 'DELETED' }
+          stateAccept: { [Op.eq]: "DELETED" },
         },
-        include: [{
-          model: OrmUserLanguage,
-          as: 'userLanguages',
-          where: { access_level: 'OWNER' },
-          required: true
-        }]
+        include: [
+          {
+            model: OrmUserLanguage,
+            as: "userLanguages",
+            where: { access_level: "OWNER" },
+            required: true,
+          },
+        ],
       });
 
       const results = await OrmLanguage.findAll({
         where: {
-          stateAccept: { [Op.eq]: 'DELETED' }
+          stateAccept: { [Op.eq]: "DELETED" },
         },
-        include: [{
-          model: OrmUserLanguage,
-          as: 'userLanguages',
-          where: { access_level: 'OWNER' },
-          required: true,
-          include: [{
-            model: OrmUser,
-            as: 'user'
-          }]
-        }],
-        order: [['name', 'ASC']],
+        include: [
+          {
+            model: OrmUserLanguage,
+            as: "userLanguages",
+            where: { access_level: "OWNER" },
+            required: true,
+            include: [
+              {
+                model: OrmUser,
+                as: "user",
+              },
+            ],
+          },
+          {
+            model: OrmUserLanguage,
+            as: "userPermission",
+            where: { user_id: filter.userId},
+            required: false,
+          },
+        ],
+        order: [["name", "ASC"]],
         limit: filter.pageSize || undefined,
-        offset: filter.pageNumber && filter.pageSize ? (filter.pageNumber - 1) * filter.pageSize : undefined
-      });
-
-      response.data = results.map((row: any) =>
-        Language.builder()
-          .setId(row.id)
-          .setName(row.name)
-          .setAbstractSyntax(row.abstractSyntax)
-          .setConcreteSyntax(row.concreteSyntax)
-          .setStateAccept(row.stateAccept)
-          .setSemantics(row.semantics)
-          .setType(row.type)
-          .setOwnerName(row.userLanguages[0]?.user?.name)
-          .setOwnerId(row.userLanguages[0]?.user?.id)
-          .setAccessLevel(row.userLanguages[0]?.access_level)
-          .setCreatedAt(row.createdAt)
-          .setUpdatedAt(row.updatedAt)
-          .build(),
-      );
-    } catch (error) {
-      console.error("Error in getDeletedLanguages:", request, error);
-      response.withError(500, "Internal server error");
-    }
-
-    return response;
-
-  }  async getPendingLanguages(
-    request: RequestModel<PagedModel>,
-  ): Promise<ResponseModel<Language[]>>{
-     const response = new ResponseModel<Language[]>(request.transactionId);
-    try {
-      const { data: filter = new PagedModel() } = request;
-
-      const { Op } = require("sequelize");
-
-      response.totalCount = await OrmLanguage.count({
-        where: {
-          stateAccept: { [Op.eq]: 'PENDING' }
-        },
-        include: [{
-          model: OrmUserLanguage,
-          as: 'userLanguages',
-          where: { access_level: 'OWNER' },
-          required: true
-        }]
-      });
-
-      const results = await OrmLanguage.findAll({
-        where: {
-          stateAccept: { [Op.eq]: 'PENDING' }
-        },
-        include: [{
-          model: OrmUserLanguage,
-          as: 'userLanguages',
-          where: { access_level: 'OWNER' },
-          required: true,
-          include: [{
-            model: OrmUser,
-            as: 'user'
-          }]
-        }],
-        order: [['name', 'ASC']],
-        limit: filter.pageSize || undefined,
-        offset: filter.pageNumber && filter.pageSize ? (filter.pageNumber - 1) * filter.pageSize : undefined
+        offset:
+          filter.pageNumber && filter.pageSize
+            ? (filter.pageNumber - 1) * filter.pageSize
+            : undefined,
       });
 
       response.data = results.map((row: any) =>
@@ -276,7 +234,86 @@ export class LanguageRepository extends BaseRepository {
 
     return response;
   }
-  
+
+  async getPendingLanguages(
+    request: RequestModel<LanguageFilter>,
+  ): Promise<ResponseModel<Language[]>> {
+    const response = new ResponseModel<Language[]>(request.transactionId);
+    try {
+      const { data: filter = new LanguageFilter() } = request;
+
+      const { Op } = require("sequelize");
+
+      response.totalCount = await OrmLanguage.count({
+        where: {
+          stateAccept: { [Op.eq]: "PENDING" },
+        },
+        include: [
+          {
+            model: OrmUserLanguage,
+            as: "userLanguages",
+            where: { access_level: "OWNER" },
+            required: true,
+          },
+        ],
+      });
+
+      const results = await OrmLanguage.findAll({
+        where: {
+          stateAccept: { [Op.eq]: "PENDING" },
+        },
+        include: [
+          {
+            model: OrmUserLanguage,
+            as: "userLanguages",
+            where: { access_level: "OWNER" },
+            required: true,
+            include: [
+              {
+                model: OrmUser,
+                as: "user",
+              },
+            ],
+          },
+          {
+            model: OrmUserLanguage,
+            as: "userPermission",
+            where: { user_id: filter.userId},
+            required: false,
+          },
+        ],
+        order: [["name", "ASC"]],
+        limit: filter.pageSize || undefined,
+        offset:
+          filter.pageNumber && filter.pageSize
+            ? (filter.pageNumber - 1) * filter.pageSize
+            : undefined,
+      });
+
+      response.data = results.map((row: any) =>
+        Language.builder()
+          .setId(row.id)
+          .setName(row.name)
+          .setAbstractSyntax(row.abstractSyntax)
+          .setConcreteSyntax(row.concreteSyntax)
+          .setStateAccept(row.stateAccept)
+          .setSemantics(row.semantics)
+          .setType(row.type)
+          .setOwnerName(row.userLanguages[0]?.user?.name)
+          .setOwnerId(row.userLanguages[0]?.user?.id)
+          .setAccessLevel(row.userLanguages[0]?.access_level)
+          .setCreatedAt(row.createdAt)
+          .setUpdatedAt(row.updatedAt)
+          .build(),
+      );
+    } catch (error) {
+      console.error("Error in getDeletedLanguages:", request, error);
+      response.withError(500, "Internal server error");
+    }
+
+    return response;
+  }
+
   async getLanguageSemantics(
     request: RequestModel<SemanticsFilter>,
   ): Promise<ResponseModel<LanguageSemantic[]>> {
