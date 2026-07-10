@@ -121,8 +121,8 @@ languagesV2Router.get("/deleted", isAuthenticated, async (req, res) => {
   }
 });
 
-languagesV2Router.get("/pending", async (req, res) => {
-  const transactionId = "getDeletedLanguages";
+languagesV2Router.get("/pending", isAuthenticated, async (req, res) => {
+  const transactionId = "getPendingLanguages";
   const userId = req.user?.id;
   const { pageNumber, pageSize, name = null } = req.query;
   try {

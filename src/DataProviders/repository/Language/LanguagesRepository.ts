@@ -24,7 +24,6 @@ export class LanguageRepository extends BaseRepository {
       const { data: filter = new LanguageFilter() } = request;
       const replacements = this.initilizeReplacements(filter);
       replacements.withDelete = withDelete ? null : "DELETED";
-      console.log(replacements);
       response.totalCount = await sequelizeVariamos
         .query(
           `
